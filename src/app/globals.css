@@ -1,0 +1,245 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+:root {
+  --jbc-blue: #1d1b67;
+  --jbc-red: #d91c24;
+  --jbc-yellow: #ffeb3b;
+  --jbc-dark: #080817;
+  --jbc-light: #f8f9ff;
+}
+
+* {
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Poppins", sans-serif;
+  background: var(--jbc-light);
+  color: #15152b;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: var(--jbc-red);
+  color: white;
+}
+
+/* =========================
+   Custom Scrollbar
+========================= */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #eeeeF8;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--jbc-blue);
+  border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--jbc-red);
+}
+
+/* =========================
+   Glass Effect
+========================= */
+
+.glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(29, 27, 103, 0.1);
+}
+
+/* =========================
+   Gradient Border
+========================= */
+
+.gradient-border {
+  position: relative;
+  border-radius: 1.25rem;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 235, 59, 0.8),
+    rgba(217, 28, 36, 0.4),
+    rgba(29, 27, 103, 0.8)
+  );
+  padding: 1px;
+}
+
+.gradient-border-content {
+  border-radius: inherit;
+  background: white;
+}
+
+/* =========================
+   Text Gradient
+========================= */
+
+.text-gradient {
+  background: linear-gradient(
+    90deg,
+    var(--jbc-yellow),
+    #ffffff,
+    var(--jbc-red)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* =========================
+   Hero Overlay
+========================= */
+
+.hero-overlay {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(8, 8, 23, 0.92) 0%,
+      rgba(29, 27, 103, 0.72) 45%,
+      rgba(29, 27, 103, 0.2) 100%
+    );
+}
+
+/* =========================
+   3D Flip
+========================= */
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* =========================
+   Section Background
+========================= */
+
+.section-dark {
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(217, 28, 36, 0.18),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at bottom left,
+      rgba(255, 235, 59, 0.08),
+      transparent 30%
+    ),
+    var(--jbc-dark);
+}
+
+/* =========================
+   Floating Animation
+========================= */
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* =========================
+   Shine Animation
+========================= */
+
+@keyframes shine {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+.shine-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-effect::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  transform: skewX(-20deg);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent
+  );
+  animation: shine 3.5s infinite;
+}
+
+/* =========================
+   Container
+========================= */
+
+.container-jbc {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-jbc {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-jbc {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
