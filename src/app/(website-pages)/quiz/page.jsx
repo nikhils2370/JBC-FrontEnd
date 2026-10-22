@@ -15,6 +15,8 @@ import {
   FiShield,
   FiUser,
   FiXCircle,
+  FiBookOpen,
+  FiFileText,
 } from "react-icons/fi";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
@@ -27,6 +29,7 @@ export default function QuizPage() {
   const { user, isAuthenticated, loading: authLoading, refreshUser } = useAuth();
 
   const [quizzes, setQuizzes] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedQuizId, setSelectedQuizId] = useState(queryQuizId || "");
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [loadingQuiz, setLoadingQuiz] = useState(false);
@@ -525,7 +528,35 @@ export default function QuizPage() {
     );
   }
 
-  // 6. Chapter & Quiz Selection Screen
+  // 6. Chapter & Quiz Selection Screen with Category Tabs
+  const chaptersCount = quizzes.filter(
+    (q) =>
+      (q.category || "").toLowerCase().includes("chapter") ||
+      (q.chapterName || "").toLowerCase().includes("chapter")
+  ).length;
+
+  const assignmentsCount = quizzes.filter(
+    (q) =>
+      (q.category || "").toLowerCase().includes("assign") ||
+      (q.chapterName || "").toLowerCase().includes("assign")
+  ).length;
+
+  const displayedQuizzes = quizzes.filter((quiz) => {
+    if (selectedCategory === "Chapters") {
+      return (
+        (quiz.category || "").toLowerCase().includes("chapter") ||
+        (quiz.chapterName || "").toLowerCase().includes("chapter")
+      );
+    }
+    if (selectedCategory === "Assignments") {
+      return (
+        (quiz.category || "").toLowerCase().includes("assign") ||
+        (quiz.chapterName || "").toLowerCase().includes("assign")
+      );
+    }
+    return true;
+  });
+
   return (
     <div className="min-h-screen pt-28 pb-16 bg-[#f8f9ff] px-4">
       <div className="max-w-4xl mx-auto">
@@ -539,12 +570,12 @@ export default function QuizPage() {
                 JBC EXAMINATION PORTAL
               </span>
               <h1 className="text-2xl sm:text-3xl font-black mt-2">
-                Choose a Chapter Quiz
+                Quizzes & Practical Assignments
               </h1>
               <p className="text-white/70 text-xs sm:text-sm mt-1 max-w-lg">
                 Hello {user?.name} ({user?.studentId}). Your quiz access is{" "}
                 <span className="text-emerald-400 font-bold">Approved</span>!
-                Select any chapter below to start your test.
+                Choose a Chapter Quiz or Assignment below to test your practical knowledge.
               </p>
             </div>
 
@@ -557,58 +588,167 @@ export default function QuizPage() {
           </div>
         </div>
 
-        {/* Quiz Chapters List */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-black text-[#1D1B67] mb-4">
-            Available Chapters & Tests
-          </h2>
+        {/* Category Tabs (Chapters vs Assignments) */}
+        <div className="flex flex-wrap items-center gap-2 mb-6 bg-white p-2 rounded-2xl border border-gray-200/80 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setSelectedCategory("All")}
+            className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
+              selectedCategory === "All"
+                ? "bg-[#1D1B67] text-white shadow-md shadow-indigo-950/20"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            }`}
+          >
+            <span>All Tests</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                selectedCategory === "All"
+                  ? "bg-white/20 text-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {quizzes.length}
+            </span>
+          </button>
 
-          {quizzes.length === 0 ? (
-            <div className="p-10 rounded-2xl bg-white border border-gray-100 text-center">
-              <p className="text-gray-500 font-semibold text-sm">
-                No quizzes published yet. Admin will add new chapter quizzes soon!
+          <button
+            type="button"
+            onClick={() => setSelectedCategory("Chapters")}
+            className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
+              selectedCategory === "Chapters"
+                ? "bg-[#D91C24] text-white shadow-md shadow-red-900/20"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            }`}
+          >
+            <FiBookOpen size={14} />
+            <span>Chapters</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                selectedCategory === "Chapters"
+                  ? "bg-white/20 text-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {chaptersCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedCategory("Assignments")}
+            className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
+              selectedCategory === "Assignments"
+                ? "bg-emerald-600 text-white shadow-md shadow-emerald-950/20"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            }`}
+          >
+            <FiFileText size={14} />
+            <span>Assignments</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                selectedCategory === "Assignments"
+                  ? "bg-white/20 text-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {assignmentsCount}
+            </span>
+          </button>
+        </div>
+
+        {/* Quiz Chapters & Assignments Cards */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-black text-[#1D1B67]">
+              {selectedCategory === "All"
+                ? "All Available Tests"
+                : selectedCategory === "Chapters"
+                ? "Chapter-wise Tests"
+                : "Practical Assignment Tests"}
+            </h2>
+            <span className="text-xs text-gray-400 font-semibold">
+              Showing {displayedQuizzes.length} test(s)
+            </span>
+          </div>
+
+          {displayedQuizzes.length === 0 ? (
+            <div className="p-12 rounded-3xl bg-white border border-gray-100 text-center shadow-sm">
+              <FiFileText size={40} className="mx-auto text-gray-300 mb-3" />
+              <p className="text-base font-bold text-gray-700">
+                No quizzes in {selectedCategory} yet
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Admin will upload chapter quizzes and practical assignments soon!
               </p>
             </div>
           ) : (
-            quizzes.map((quiz) => (
-              <div
-                key={quiz._id}
-                className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-              >
-                <div>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="px-2.5 py-0.5 rounded-full bg-[#1D1B67]/10 text-[#1D1B67] text-[10px] font-black uppercase">
-                      {quiz.chapterName}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      • {quiz.category}
-                    </span>
-                  </div>
+            displayedQuizzes.map((quiz) => {
+              const isAssignment =
+                (quiz.category || "").toLowerCase().includes("assign") ||
+                (quiz.chapterName || "").toLowerCase().includes("assign");
 
-                  <h3 className="text-lg font-black text-[#1D1B67]">
-                    {quiz.title}
-                  </h3>
-
-                  <p className="text-xs text-gray-500 mt-1 max-w-xl">
-                    {quiz.description || "Computer practical concepts."}
-                  </p>
-
-                  <div className="mt-3 flex items-center gap-4 text-xs text-gray-400 font-medium">
-                    <span>📝 {quiz.totalQuestions} Questions</span>
-                    <span>⏱️ {quiz.durationMinutes || 10} Minutes</span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => startQuiz(quiz._id)}
-                  disabled={loadingQuiz}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#D91C24] hover:bg-[#b9161d] text-white text-xs font-black shadow-md shadow-red-900/20 transition shrink-0"
+              return (
+                <div
+                  key={quiz._id}
+                  className={`bg-white rounded-2xl p-6 border transition flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-sm hover:shadow-md ${
+                    isAssignment
+                      ? "border-emerald-200/70 hover:border-emerald-400"
+                      : "border-gray-200 hover:border-[#1D1B67]/30"
+                  }`}
                 >
-                  <FiPlay size={14} /> Start Chapter Quiz
-                </button>
-              </div>
-            ))
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          isAssignment
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-[#1D1B67]/10 text-[#1D1B67]"
+                        }`}
+                      >
+                        {isAssignment ? "Assignment" : "Chapter Test"}
+                      </span>
+
+                      <span className="text-xs font-bold text-gray-600">
+                        {quiz.chapterName}
+                      </span>
+
+                      {quiz.category && quiz.category !== "Chapters" && quiz.category !== "Assignments" && (
+                        <span className="text-[11px] text-gray-400">
+                          • {quiz.category}
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="text-lg font-black text-[#101828]">
+                      {quiz.title}
+                    </h3>
+
+                    <p className="text-xs text-gray-500 max-w-xl leading-relaxed">
+                      {quiz.description || "Practical computer concepts test."}
+                    </p>
+
+                    <div className="flex items-center gap-4 text-xs text-gray-400 font-semibold pt-1">
+                      <span>📝 {quiz.totalQuestions} Questions</span>
+                      <span>⏱️ {quiz.durationMinutes || 10} Minutes</span>
+                      <span>🎯 40% to Pass</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => startQuiz(quiz._id)}
+                    disabled={loadingQuiz}
+                    className={`inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-white text-xs font-black shadow-md transition shrink-0 ${
+                      isAssignment
+                        ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-900/20"
+                        : "bg-[#D91C24] hover:bg-[#b9161d] shadow-red-900/20"
+                    }`}
+                  >
+                    <FiPlay size={14} /> Start {isAssignment ? "Assignment" : "Quiz"}
+                  </button>
+                </div>
+              );
+            })
           )}
         </div>
       </div>

@@ -23,6 +23,7 @@ export default function StudentDashboardPage() {
   const { user, isAuthenticated, loading: authLoading, refreshUser } = useAuth();
 
   const [quizzes, setQuizzes] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [resultsData, setResultsData] = useState({ stats: null, results: [] });
   const [top3, setTop3] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -238,62 +239,130 @@ export default function StudentDashboardPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <span className="text-xs font-bold text-[#D91C24] uppercase tracking-wider">
-                Chapters & Tests
+                Chapters & Assignments
               </span>
               <h2 className="text-xl sm:text-2xl font-black text-[#1D1B67]">
-                Available Quizzes
+                Available Quizzes & Tests
               </h2>
             </div>
-            <span className="text-xs text-gray-500 font-medium">
-              {quizzes.length} Chapters Available
-            </span>
+            
+            {/* Category Tabs */}
+            <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("All")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  selectedCategory === "All"
+                    ? "bg-white text-[#1D1B67] shadow-sm"
+                    : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                All ({quizzes.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("Chapters")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  selectedCategory === "Chapters"
+                    ? "bg-[#D91C24] text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                Chapters
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("Assignments")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  selectedCategory === "Assignments"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                Assignments
+              </button>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {quizzes.map((quiz) => (
-              <div
-                key={quiz._id}
-                className="rounded-2xl border border-gray-100 p-5 hover:border-[#1D1B67]/20 transition-all flex flex-col justify-between bg-gradient-to-b from-gray-50/50 to-white"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-[#1D1B67]/10 text-[#1D1B67] text-[10px] font-black uppercase">
-                      {quiz.chapterName || "Chapter"}
-                    </span>
-                    <span className="text-[11px] font-semibold text-gray-400">
-                      {quiz.totalQuestions} Questions
-                    </span>
+            {quizzes
+              .filter((q) => {
+                if (selectedCategory === "Chapters") {
+                  return (
+                    (q.category || "").toLowerCase().includes("chapter") ||
+                    (q.chapterName || "").toLowerCase().includes("chapter")
+                  );
+                }
+                if (selectedCategory === "Assignments") {
+                  return (
+                    (q.category || "").toLowerCase().includes("assign") ||
+                    (q.chapterName || "").toLowerCase().includes("assign")
+                  );
+                }
+                return true;
+              })
+              .map((quiz) => {
+                const isAssignment =
+                  (quiz.category || "").toLowerCase().includes("assign") ||
+                  (quiz.chapterName || "").toLowerCase().includes("assign");
+
+                return (
+                  <div
+                    key={quiz._id}
+                    className={`rounded-2xl border p-5 hover:border-[#1D1B67]/30 transition-all flex flex-col justify-between bg-gradient-to-b from-gray-50/50 to-white ${
+                      isAssignment ? "border-emerald-100" : "border-gray-100"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                            isAssignment
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-[#1D1B67]/10 text-[#1D1B67]"
+                          }`}
+                        >
+                          {quiz.chapterName || (isAssignment ? "Assignment" : "Chapter")}
+                        </span>
+                        <span className="text-[11px] font-semibold text-gray-400">
+                          {quiz.totalQuestions} Questions
+                        </span>
+                      </div>
+
+                      <h3 className="font-extrabold text-base text-[#1D1B67]">
+                        {quiz.title}
+                      </h3>
+
+                      <p className="text-xs text-gray-500 mt-2 line-clamp-2">
+                        {quiz.description || "Test your practical computer concepts."}
+                      </p>
+                    </div>
+
+                    <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
+                      <span className="text-xs text-gray-400 font-medium">
+                        ⏱️ {quiz.durationMinutes || 15} mins
+                      </span>
+
+                      {isApproved ? (
+                        <Link
+                          href={`/quiz?id=${quiz._id}`}
+                          className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-xs font-bold transition shadow-sm ${
+                            isAssignment
+                              ? "bg-emerald-600 hover:bg-emerald-700"
+                              : "bg-[#D91C24] hover:bg-[#b9161d]"
+                          }`}
+                        >
+                          <FiPlay size={13} /> Attempt {isAssignment ? "Assignment" : "Quiz"}
+                        </Link>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gray-100 text-gray-400 text-xs font-bold">
+                          <FiLock size={12} /> Locked
+                        </span>
+                      )}
+                    </div>
                   </div>
-
-                  <h3 className="font-extrabold text-base text-[#1D1B67]">
-                    {quiz.title}
-                  </h3>
-
-                  <p className="text-xs text-gray-500 mt-2 line-clamp-2">
-                    {quiz.description || "Test your practical computer concepts."}
-                  </p>
-                </div>
-
-                <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-xs text-gray-400 font-medium">
-                    ⏱️ {quiz.durationMinutes || 15} mins
-                  </span>
-
-                  {isApproved ? (
-                    <Link
-                      href={`/quiz?id=${quiz._id}`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#D91C24] hover:bg-[#b9161d] text-white text-xs font-bold transition shadow-sm"
-                    >
-                      <FiPlay size={13} /> Attempt Quiz
-                    </Link>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gray-100 text-gray-400 text-xs font-bold">
-                      <FiLock size={12} /> Locked
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+                );
+              })}
           </div>
         </div>
 

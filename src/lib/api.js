@@ -58,9 +58,27 @@ export const api = {
 
   getMe: () => request("/auth/me"),
 
-  // Hero section
+  // Hero section & Cloudinary image upload
   getHeroSlides: () => request("/hero"),
   getAllHeroSlides: () => request("/hero/all"),
+  uploadHeroImage: async (file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    const token = typeof window !== "undefined" ? localStorage.getItem("jbc_token") : null;
+
+    const res = await fetch(`${API_BASE}/hero/upload`, {
+      method: "POST",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to upload image to Cloudinary");
+    }
+    return data;
+  },
   createHeroSlide: (data) =>
     request("/hero", {
       method: "POST",
@@ -93,7 +111,7 @@ export const api = {
       method: "DELETE",
     }),
 
-  // Students & Approvals
+  // Students & Approvals & Course Completion Data Purge
   getStudents: () => request("/students"),
   updateStudentApproval: (id, approved, status) =>
     request(`/students/${id}/approval`, {
@@ -104,10 +122,17 @@ export const api = {
     request(`/students/${id}`, {
       method: "DELETE",
     }),
+  bulkDeleteStudents: (studentIds) =>
+    request("/students/bulk-delete", {
+      method: "POST",
+      body: JSON.stringify({ studentIds }),
+    }),
 
   // Quizzes
-  getQuizzes: () => request("/quizzes"),
+  getQuizzes: (category) =>
+    request(`/quizzes${category ? `?category=${encodeURIComponent(category)}` : ""}`),
   getAdminQuizzes: () => request("/quizzes/admin-all"),
+  getAdminQuiz: (id) => request(`/quizzes/admin/${id}`),
   getQuiz: (id) => request(`/quizzes/${id}`),
   submitQuiz: (id, answers, timeSpentSeconds) =>
     request(`/quizzes/${id}/submit`, {
@@ -134,8 +159,43 @@ export const api = {
       method: "DELETE",
     }),
 
-  // Results & Leaderboard
+  // Results, Deletions, Downloads & Leaderboard
   getMyResults: () => request("/results/my-results"),
   getAllResults: () => request("/results/all"),
+  deleteQuizResult: (id) =>
+    request(`/results/${id}`, {
+      method: "DELETE",
+    }),
+  bulkDeleteQuizResults: (resultIds) =>
+    request("/results/bulk-delete", {
+      method: "POST",
+      body: JSON.stringify({ resultIds }),
+    }),
+  clearAllQuizResults: () =>
+    request("/results/clear-all/confirm", {
+      method: "DELETE",
+    }),
+  downloadResultsExport: async (format = "csv") => {
+    // const token = getToken();
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("jbc_token") : null;
+    // console.log(token);
+    
+    const res = await fetch(`${API_BASE}/results/export?format=${format}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!res.ok) throw new Error("Failed to export results");
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `JBC_Quiz_Results_${Date.now()}.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
   getLeaderboard: () => request("/results/leaderboard"),
 };

@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FiEdit2, FiImage, FiPlus, FiTrash2, FiSave, FiCheck, FiRefreshCw } from "react-icons/fi";
+import {
+  FiEdit2,
+  FiImage,
+  FiPlus,
+  FiTrash2,
+  FiSave,
+  FiCheck,
+  FiRefreshCw,
+  FiUploadCloud,
+} from "react-icons/fi";
 import { api } from "@/lib/api";
 import PageTitle from "@/components/admin/PageTitle";
 
@@ -10,6 +19,7 @@ export default function AdminHeroPage() {
   const [loading, setLoading] = useState(true);
   const [editingSlide, setEditingSlide] = useState(null);
   const [formMsg, setFormMsg] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [formData, setFormData] = useState({
     small: "WELCOME TO JBC",
@@ -39,6 +49,32 @@ export default function AdminHeroPage() {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file (JPG, PNG, WebP)");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const res = await api.uploadHeroImage(file);
+      if (res.success && res.imageUrl) {
+        setFormData((prev) => ({ ...prev, image: res.imageUrl }));
+        setFormMsg("Image successfully uploaded via Multer & Cloudinary!");
+        setTimeout(() => setFormMsg(""), 4000);
+      } else {
+        alert(res.message || "Image upload failed");
+      }
+    } catch (err) {
+      alert("Image upload error: " + err.message);
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleCreateOrUpdate = async (e) => {
@@ -198,22 +234,66 @@ export default function AdminHeroPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">
-              Image URL / Path *
-            </label>
-            <input
-              type="text"
-              name="image"
-              required
-              value={formData.image}
-              onChange={handleChange}
-              placeholder="e.g. /hero-1.jpg or https://images.unsplash.com/..."
-              className="w-full text-xs rounded-xl border border-gray-200 p-3 outline-none focus:border-[#1D1B67]"
-            />
-            <p className="text-[11px] text-gray-400 mt-1">
-              Tip: You can use local paths like <code>/hero-1.jpg</code>, <code>/hero-2.jpg</code>, <code>/hero-3.jpg</code> or any web image URL.
-            </p>
+          {/* Hero Banner Image with Cloudinary & Multer Upload */}
+          <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <label className="block text-xs font-bold text-gray-800">
+                  Hero Banner Image *
+                </label>
+                <p className="text-[11px] text-gray-500">
+                  Upload an image from your computer using Multer & Cloudinary, or enter an image URL.
+                </p>
+              </div>
+
+              {/* Upload Button */}
+              <label className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#1D1B67] to-[#D91C24] text-white text-xs font-bold cursor-pointer hover:opacity-95 transition shadow-sm self-start sm:self-auto">
+                <FiUploadCloud className={uploadingImage ? "animate-bounce" : ""} />
+                {uploadingImage ? "Uploading to Cloudinary..." : "Upload from Computer (Multer)"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={uploadingImage}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-3 items-center">
+              <div className="md:col-span-2">
+                <input
+                  type="text"
+                  name="image"
+                  required
+                  value={formData.image}
+                  onChange={handleChange}
+                  placeholder="e.g. /hero-1.jpg or https://res.cloudinary.com/..."
+                  className="w-full text-xs rounded-xl border border-gray-200 bg-white p-3 outline-none focus:border-[#1D1B67]"
+                />
+              </div>
+
+              {/* Live Preview Thumbnail */}
+              <div className="flex items-center gap-2">
+                {formData.image ? (
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={formData.image}
+                      alt="Hero Preview"
+                      className="w-16 h-12 object-cover rounded-lg border border-gray-200 shadow-sm"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                      }}
+                    />
+                    <span className="text-[10px] text-gray-500 font-semibold">
+                      Live Preview
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-[11px] text-gray-400 italic">No image selected</span>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-3 pt-2">

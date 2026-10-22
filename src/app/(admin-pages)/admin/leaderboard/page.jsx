@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import {
   FiAward,
   FiCheckCircle,
+  FiDownload,
   FiEye,
   FiRefreshCw,
   FiStar,
+  FiTrash2,
   FiZap,
 } from "react-icons/fi";
 import { api } from "@/lib/api";
@@ -19,8 +21,11 @@ export default function AdminLeaderboardPage() {
   });
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("leaderboard"); // "leaderboard" | "submissions"
   const [viewSubmission, setViewSubmission] = useState(null);
+  const [selectedSubmissions, setSelectedSubmissions] = useState([]);
+  const [statusMessage, setStatusMessage] = useState(null);
 
   const loadData = async () => {
     try {
@@ -30,7 +35,10 @@ export default function AdminLeaderboardPage() {
       ]);
 
       if (lbRes.success) setLeaderboardData(lbRes);
-      if (subRes.success) setSubmissions(subRes.data || []);
+      if (subRes.success) {
+        setSubmissions(subRes.data || []);
+        setSelectedSubmissions([]);
+      }
     } catch (err) {
       console.error("Leaderboard load error:", err);
     } finally {
@@ -41,6 +49,118 @@ export default function AdminLeaderboardPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedSubmissions(submissions.map((s) => s._id));
+    } else {
+      setSelectedSubmissions([]);
+    }
+  };
+
+  const handleToggleSelect = (id) => {
+    setSelectedSubmissions((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleDeleteSingle = async (id, studentName) => {
+    if (
+      !confirm(
+        `Kya aap sure hain ki "${studentName || "student"}" ka ye quiz result delete karna chahte hain? DB se space free ho jayegi.`
+      )
+    ) {
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const res = await api.deleteQuizResult(id);
+      if (res.success) {
+        setStatusMessage({ type: "success", text: "Result delete ho gaya aur DB space free ho gayi!" });
+        loadData();
+      } else {
+        alert(res.message || "Delete fail ho gaya");
+      }
+    } catch (err) {
+      alert("Delete karne me error: " + err.message);
+    } finally {
+      setActionLoading(false);
+      setTimeout(() => setStatusMessage(null), 4000);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedSubmissions.length === 0) return;
+    if (
+      !confirm(
+        `Kya aap selected ${selectedSubmissions.length} quiz results ko delete karna chahte hain? Isse DB me space khali hogi.`
+      )
+    ) {
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const res = await api.bulkDeleteQuizResults(selectedSubmissions);
+      if (res.success) {
+        setStatusMessage({
+          type: "success",
+          text: `${res.deletedCount || selectedSubmissions.length} quiz results successfully delete ho gaye!`,
+        });
+        loadData();
+      } else {
+        alert(res.message || "Bulk delete fail ho gaya");
+      }
+    } catch (err) {
+      alert("Bulk delete me error: " + err.message);
+    } finally {
+      setActionLoading(false);
+      setTimeout(() => setStatusMessage(null), 4000);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (submissions.length === 0) return;
+    if (
+      !confirm(
+        "⚠️ WARNING: Kya aap SARE student quiz results delete karna chahte hain? Ye action undo nahi ho sakti. Database ka space completely free ho jayega."
+      )
+    ) {
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const res = await api.clearAllQuizResults();
+      if (res.success) {
+        setStatusMessage({
+          type: "success",
+          text: `All ${res.deletedCount || 0} quiz results database se delete ho gaye!`,
+        });
+        loadData();
+      } else {
+        alert(res.message || "Clear all fail ho gaya");
+      }
+    } catch (err) {
+      alert("Clear all me error: " + err.message);
+    } finally {
+      setActionLoading(false);
+      setTimeout(() => setStatusMessage(null), 4000);
+    }
+  };
+
+  const handleDownload = async (format) => {
+    try {
+      await api.downloadResultsExport(format);
+      setStatusMessage({
+        type: "success",
+        text: `Quiz results ${format.toUpperCase()} file download ho rahi hai!`,
+      });
+      setTimeout(() => setStatusMessage(null), 3000);
+    } catch (err) {
+      alert(`Export error: ${err.message}`);
+      // console.log(err);
+      
+    }
+  };
 
   return (
     <div className="p-4 sm:p-7 space-y-7">
@@ -57,6 +177,25 @@ export default function AdminLeaderboardPage() {
           <FiRefreshCw className={loading ? "animate-spin" : ""} /> Refresh
         </button>
       </div>
+
+      {statusMessage && (
+        <div
+          className={`p-4 rounded-2xl text-xs font-bold border flex items-center justify-between shadow-sm animate-fade-in ${
+            statusMessage.type === "success"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+              : "bg-red-50 border-red-200 text-red-800"
+          }`}
+        >
+          <span>{statusMessage.text}</span>
+          <button
+            type="button"
+            onClick={() => setStatusMessage(null)}
+            className="text-xs font-bold px-2 py-0.5 rounded hover:bg-black/5"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-gray-200 pb-2">
@@ -231,80 +370,176 @@ export default function AdminLeaderboardPage() {
       ========================================================= */}
       {activeTab === "submissions" && (
         <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h3 className="font-black text-base text-[#101828]">
-              All Student Quiz Papers Submitted ({submissions.length})
-            </h3>
+          {/* Action Toolbar */}
+          <div className="px-6 py-4 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-gradient-to-r from-gray-50/50 to-white">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-black text-base text-[#101828]">
+                  Student Quiz Papers Submitted ({submissions.length})
+                </h3>
+                {selectedSubmissions.length > 0 && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#1D1B67] text-white">
+                    {selectedSubmissions.length} Selected
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Manage, export for backup, or delete quiz results to keep database storage free.
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleDownload("csv")}
+                disabled={submissions.length === 0}
+                className="px-3 py-1.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 text-xs font-bold hover:bg-emerald-100 transition flex items-center gap-1.5 disabled:opacity-50"
+                title="Download all quiz results as CSV spreadsheet"
+              >
+                <FiDownload /> Download CSV
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDownload("json")}
+                disabled={submissions.length === 0}
+                className="px-3 py-1.5 rounded-xl border border-blue-300 bg-blue-50 text-blue-800 text-xs font-bold hover:bg-blue-100 transition flex items-center gap-1.5 disabled:opacity-50"
+                title="Download all quiz results as JSON backup"
+              >
+                <FiDownload /> Download JSON
+              </button>
+
+              {selectedSubmissions.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleBulkDelete}
+                  disabled={actionLoading}
+                  className="px-3 py-1.5 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition flex items-center gap-1.5 shadow-sm"
+                >
+                  <FiTrash2 /> Delete Selected ({selectedSubmissions.length})
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleClearAll}
+                disabled={submissions.length === 0 || actionLoading}
+                className="px-3 py-1.5 rounded-xl border border-red-200 bg-red-50 text-red-700 text-xs font-bold hover:bg-red-100 transition flex items-center gap-1.5 disabled:opacity-50"
+                title="Permanently remove all submissions to free maximum DB space"
+              >
+                <FiTrash2 /> Clear All
+              </button>
+            </div>
           </div>
 
           {submissions.length === 0 ? (
-            <div className="p-8 text-center text-xs text-gray-400">
-              No quiz submissions logged yet.
+            <div className="p-12 text-center text-xs text-gray-400">
+              No quiz submissions logged in the database yet.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/70 text-gray-500 font-bold uppercase tracking-wider">
+                    <th className="py-3.5 px-4 w-10">
+                      <input
+                        type="checkbox"
+                        checked={
+                          submissions.length > 0 &&
+                          selectedSubmissions.length === submissions.length
+                        }
+                        onChange={handleSelectAll}
+                        className="rounded border-gray-300 text-[#1D1B67] focus:ring-[#1D1B67] cursor-pointer"
+                        title="Select All"
+                      />
+                    </th>
                     <th className="py-3.5 px-4">Submitted Date</th>
                     <th className="py-3.5 px-4">Student</th>
                     <th className="py-3.5 px-4">Chapter / Quiz Title</th>
                     <th className="py-3.5 px-4">Score</th>
                     <th className="py-3.5 px-4">Percentage</th>
                     <th className="py-3.5 px-4">Result</th>
-                    <th className="py-3.5 px-4 text-right">Review</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {submissions.map((sub) => (
-                    <tr key={sub._id} className="hover:bg-gray-50/60 transition">
-                      <td className="py-3.5 px-4 text-gray-500">
-                        {new Date(sub.createdAt).toLocaleString()}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="font-bold text-[#101828]">
-                          {sub.studentName}
-                        </span>
-                        <span className="block text-[11px] text-gray-400 font-mono">
-                          {sub.studentId}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="font-bold text-[#1D1B67]">
-                          {sub.chapterName}
-                        </span>
-                        <span className="block text-[11px] text-gray-400">
-                          {sub.quizTitle}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 font-black text-[#101828]">
-                        {sub.score} / {sub.totalQuestions}
-                      </td>
-                      <td className="py-3.5 px-4 font-black text-[#D91C24]">
-                        {sub.percentage}%
-                      </td>
-                      <td className="py-3.5 px-4">
-                        {sub.passed ? (
-                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold">
-                            Passed
+                  {submissions.map((sub) => {
+                    const isSelected = selectedSubmissions.includes(sub._id);
+                    return (
+                      <tr
+                        key={sub._id}
+                        className={`transition ${
+                          isSelected ? "bg-indigo-50/40" : "hover:bg-gray-50/60"
+                        }`}
+                      >
+                        <td className="py-3.5 px-4">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleSelect(sub._id)}
+                            className="rounded border-gray-300 text-[#1D1B67] focus:ring-[#1D1B67] cursor-pointer"
+                          />
+                        </td>
+                        <td className="py-3.5 px-4 text-gray-500">
+                          {new Date(sub.createdAt).toLocaleString()}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="font-bold text-[#101828]">
+                            {sub.studentName}
                           </span>
-                        ) : (
-                          <span className="px-2.5 py-0.5 rounded-full bg-red-50 text-red-600 font-bold">
-                            Failed
+                          <span className="block text-[11px] text-gray-400 font-mono">
+                            {sub.studentId}
                           </span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => setViewSubmission(sub)}
-                          className="px-3 py-1 rounded-lg border border-gray-200 text-xs font-bold text-[#1D1B67] hover:border-[#1D1B67] transition"
-                        >
-                          View Answers
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="font-bold text-[#1D1B67]">
+                            {sub.chapterName}
+                          </span>
+                          <span className="block text-[11px] text-gray-400">
+                            {sub.quizTitle}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-black text-[#101828]">
+                          {sub.score} / {sub.totalQuestions}
+                        </td>
+                        <td className="py-3.5 px-4 font-black text-[#D91C24]">
+                          {sub.percentage}%
+                        </td>
+                        <td className="py-3.5 px-4">
+                          {sub.passed ? (
+                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold">
+                              Passed
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.5 rounded-full bg-red-50 text-red-600 font-bold">
+                              Failed
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-right space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => setViewSubmission(sub)}
+                            className="px-2.5 py-1 rounded-lg border border-gray-200 text-xs font-bold text-[#1D1B67] hover:border-[#1D1B67] transition"
+                            title="View student answer sheet"
+                          >
+                            View
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleDeleteSingle(sub._id, sub.studentName)
+                            }
+                            className="px-2 py-1 rounded-lg border border-red-200 text-xs font-bold text-red-600 hover:bg-red-50 transition"
+                            title="Delete result to save DB space"
+                          >
+                            <FiTrash2 className="inline text-xs" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

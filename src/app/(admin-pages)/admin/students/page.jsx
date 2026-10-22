@@ -22,12 +22,15 @@ export default function AdminStudentsPage() {
   const [filter, setFilter] = useState("all"); // "all" | "pending" | "approved"
   const [search, setSearch] = useState("");
   const [notification, setNotification] = useState("");
+  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const loadStudents = async () => {
     try {
       const res = await api.getStudents();
       if (res.success && res.data) {
         setStudents(res.data);
+        setSelectedStudents([]);
       }
     } catch (err) {
       console.error("Failed to load students:", err);
@@ -39,6 +42,20 @@ export default function AdminStudentsPage() {
   useEffect(() => {
     loadStudents();
   }, []);
+
+  const handleSelectAll = (e, currentList) => {
+    if (e.target.checked) {
+      setSelectedStudents(currentList.map((s) => s._id));
+    } else {
+      setSelectedStudents([]);
+    }
+  };
+
+  const handleToggleSelect = (id) => {
+    setSelectedStudents((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
 
   const handleToggleApproval = async (studentId, approve) => {
     setActionLoadingId(studentId);
@@ -65,10 +82,10 @@ export default function AdminStudentsPage() {
     }
   };
 
-  const handleDelete = async (studentId) => {
+  const handleDelete = async (studentId, studentName) => {
     if (
       !confirm(
-        "Are you sure you want to delete this student and their quiz records?"
+        `🎓 Course Complete: Kya aap sure hain ki "${studentName || "student"}" ka course complete ho chuka hai aur aap inka sara data (User account + quiz results) database se permanently delete karna chahte hain?`
       )
     )
       return;
@@ -76,9 +93,39 @@ export default function AdminStudentsPage() {
     try {
       await api.deleteStudent(studentId);
       setStudents((prev) => prev.filter((s) => s._id !== studentId));
-      setNotification("Student deleted successfully.");
+      setSelectedStudents((prev) => prev.filter((id) => id !== studentId));
+      setNotification(`Student "${studentName}" ka course complete hone par sara data database se delete kar diya gaya.`);
     } catch (err) {
-      alert(err.message || "Failed to delete student");
+      alert(err.message || "Failed to delete student data");
+    }
+  };
+
+  const handleBulkCourseCompletedPurge = async () => {
+    if (selectedStudents.length === 0) return;
+
+    if (
+      !confirm(
+        `🎓 Course Complete Purge: Kya aap selected ${selectedStudents.length} students ka course complete hone par unka aur unke sare quiz results ka data database se permanently delete karna chahte hain?`
+      )
+    ) {
+      return;
+    }
+
+    setBulkLoading(true);
+    try {
+      const res = await api.bulkDeleteStudents(selectedStudents);
+      if (res.success) {
+        setNotification(
+          `Successfully ${res.deletedCount || selectedStudents.length} completed students aur unke quiz results delete kar diye gaye!`
+        );
+        loadStudents();
+      } else {
+        alert(res.message || "Bulk purge failed");
+      }
+    } catch (err) {
+      alert(err.message || "Error during course completed purge");
+    } finally {
+      setBulkLoading(false);
     }
   };
 
@@ -166,16 +213,30 @@ export default function AdminStudentsPage() {
           </button>
         </div>
 
-        {/* Search */}
-        <div className="relative w-full sm:w-72">
-          <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, ID or email..."
-            className="w-full text-xs rounded-xl border border-gray-200 pl-9 pr-4 py-2.5 outline-none focus:border-[#1D1B67]"
-          />
+        {/* Search & Bulk Action */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {selectedStudents.length > 0 && (
+            <button
+              type="button"
+              onClick={handleBulkCourseCompletedPurge}
+              disabled={bulkLoading}
+              className="px-3.5 py-2 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition flex items-center gap-1.5 shadow-sm"
+              title="Delete all selected students and purge their quiz records upon course completion"
+            >
+              <FiAward /> Course Completed - Purge ({selectedStudents.length})
+            </button>
+          )}
+
+          <div className="relative w-full sm:w-64">
+            <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name, ID or email..."
+              className="w-full text-xs rounded-xl border border-gray-200 pl-9 pr-4 py-2 outline-none focus:border-[#1D1B67]"
+            />
+          </div>
         </div>
       </div>
 
@@ -190,12 +251,24 @@ export default function AdminStudentsPage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/70 text-gray-500 font-bold uppercase tracking-wider">
+                  <th className="py-3.5 px-4 w-10">
+                    <input
+                      type="checkbox"
+                      checked={
+                        filteredStudents.length > 0 &&
+                        selectedStudents.length === filteredStudents.length
+                      }
+                      onChange={(e) => handleSelectAll(e, filteredStudents)}
+                      className="rounded border-gray-300 text-[#1D1B67] focus:ring-[#1D1B67] cursor-pointer"
+                      title="Select All"
+                    />
+                  </th>
                   <th className="py-3.5 px-4">Student</th>
                   <th className="py-3.5 px-4">Student ID</th>
                   <th className="py-3.5 px-4">Quizzes Played</th>
                   <th className="py-3.5 px-4">Total Score</th>
                   <th className="py-3.5 px-4">Quiz Permission</th>
-                  <th className="py-3.5 px-4 text-right">Approval Action</th>
+                  <th className="py-3.5 px-4 text-right">Approval & Course Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -203,9 +276,25 @@ export default function AdminStudentsPage() {
                   const isApp = st.quizAccessApproved;
                   const isPending =
                     !isApp && st.quizAccessStatus !== "rejected";
+                  const isSelected = selectedStudents.includes(st._id);
 
                   return (
-                    <tr key={st._id} className="hover:bg-gray-50/60 transition">
+                    <tr
+                      key={st._id}
+                      className={`transition ${
+                        isSelected ? "bg-indigo-50/40" : "hover:bg-gray-50/60"
+                      }`}
+                    >
+                      {/* Checkbox */}
+                      <td className="py-3.5 px-4">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(st._id)}
+                          className="rounded border-gray-300 text-[#1D1B67] focus:ring-[#1D1B67] cursor-pointer"
+                        />
+                      </td>
+
                       {/* Name & Contact */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
@@ -267,30 +356,30 @@ export default function AdminStudentsPage() {
                               type="button"
                               onClick={() => handleToggleApproval(st._id, false)}
                               disabled={actionLoadingId === st._id}
-                              className="px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 font-bold transition"
+                              className="px-2.5 py-1 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 font-bold transition text-xs"
                             >
-                              Revoke Access
+                              Revoke
                             </button>
                           ) : (
                             <button
                               type="button"
                               onClick={() => handleToggleApproval(st._id, true)}
                               disabled={actionLoadingId === st._id}
-                              className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition shadow-sm"
+                              className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition shadow-sm text-xs"
                             >
                               {actionLoadingId === st._id
                                 ? "Processing..."
-                                : "✓ Approve Quiz Access"}
+                                : "✓ Approve"}
                             </button>
                           )}
 
                           <button
                             type="button"
-                            onClick={() => handleDelete(st._id)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
-                            title="Delete Student"
+                            onClick={() => handleDelete(st._id, st.name)}
+                            className="px-2.5 py-1 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 font-bold transition text-xs flex items-center gap-1"
+                            title="Course Completed: Delete student and clear all DB data"
                           >
-                            <FiTrash2 size={14} />
+                            <FiTrash2 size={12} /> Course Done (Del)
                           </button>
                         </div>
                       </td>
