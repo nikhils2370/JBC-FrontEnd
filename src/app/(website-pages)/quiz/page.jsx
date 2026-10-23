@@ -398,7 +398,7 @@ export default function QuizPage() {
     const isLastQuestion = currentQuestionIdx === totalQ - 1;
 
     return (
-      <div className="min-h-screen pt-28 pb-16 bg-[#f8f9ff] px-4">
+      <div className="min-h-screen pt-28 pb-16 bg-[#d2d2d3] px-4">
         <div className="max-w-3xl mx-auto">
           {/* Header Bar */}
           <div className="flex items-center justify-between mb-4">
