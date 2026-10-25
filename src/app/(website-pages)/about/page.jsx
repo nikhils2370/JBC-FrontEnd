@@ -16,7 +16,7 @@ const stats = [
         label: "Students Trained",
     },
     {
-        number: "10+",
+        number: "3+",
         label: "Courses",
     },
     {

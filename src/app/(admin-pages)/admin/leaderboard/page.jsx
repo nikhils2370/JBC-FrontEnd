@@ -22,7 +22,7 @@ export default function AdminLeaderboardPage() {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("leaderboard"); // "leaderboard" | "submissions"
+  const [activeTab, setActiveTab] = useState("submissions"); // "leaderboard" | "submissions"
   const [viewSubmission, setViewSubmission] = useState(null);
   const [selectedSubmissions, setSelectedSubmissions] = useState([]);
   const [statusMessage, setStatusMessage] = useState(null);

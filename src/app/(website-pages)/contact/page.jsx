@@ -195,8 +195,6 @@ export default function ContactPage() {
                                             <option>RKCL</option>
                                             <option>RS-CIT</option>
                                             <option>Tally Prime</option>
-                                            <option>Graphic Design</option>
-                                            <option>Web Development</option>
                                         </select>
                                     </div>
 

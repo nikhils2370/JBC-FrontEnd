@@ -114,8 +114,6 @@ export default function Footer() {
                         <ul className="space-y-3 text-sm text-white/60">
                             <li>RKCL / RS-CIT</li>
                             <li>Tally Prime</li>
-                            <li>Graphic Design</li>
-                            <li>Web Development</li>
                             <li>Advanced Computer Courses</li>
                         </ul>
                     </div>

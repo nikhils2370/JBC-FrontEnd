@@ -57,7 +57,7 @@ export default function LogoFlip() {
         aria-label={
           flipped
             ? "Flip back to JBC logo"
-            : "Flip JBC logo to show payment QR code"
+            : "Flip JBC logo to show QR"
         }
         aria-pressed={flipped}
         onClick={() => setFlipped((prev) => !prev)}
@@ -106,7 +106,7 @@ export default function LogoFlip() {
 
               <div className="absolute bottom-3 flex items-center gap-2 text-xs text-[#1D1B67]/60">
                 <FiRefreshCw size={13} />
-                Tap to view payment QR
+                Tap to view QR
               </div>
             </div>
           </div>
@@ -124,7 +124,7 @@ export default function LogoFlip() {
                   <FiCreditCard size={17} />
 
                   <span className="text-xs font-bold tracking-wider">
-                    SECURE PAYMENT
+                    Open QR 
                   </span>
                 </div>
 
@@ -139,7 +139,7 @@ export default function LogoFlip() {
                   <img
                     key={qrImage}
                     src={qrImage}
-                    alt="JBC Payment QR Code"
+                    alt="JBC QR Code"
                     className="h-full w-full object-contain"
                     onError={(e) => {
                       e.currentTarget.onerror = null;
@@ -150,11 +150,11 @@ export default function LogoFlip() {
               </div>
 
               <h3 className="mt-4 text-xl font-extrabold text-white">
-                Scan & Pay
+                Scan
               </h3>
 
               <p className="mt-1 max-w-[250px] text-center text-xs leading-5 text-white/60">
-                Scan the QR code to make your course payment.
+                Scan the QR code to open website.
               </p>
 
               <div className="absolute bottom-3 flex items-center gap-2 text-xs text-white/50">

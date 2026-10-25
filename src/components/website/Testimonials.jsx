@@ -23,12 +23,7 @@ const testimonials = [
         review:
             "JBC has a friendly learning environment. I improved my computer skills and became much more confident.",
     },
-    {
-        name: "Amit Singh",
-        course: "Web Development Student",
-        review:
-            "The practical web development sessions were very useful. I learned how to build responsive websites from scratch.",
-    },
+
 ];
 
 export default function Testimonials() {

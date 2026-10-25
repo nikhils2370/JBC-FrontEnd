@@ -42,18 +42,6 @@ const defaultCourses = [
             "GST & business reports",
         ],
     },
-    {
-        title: "Web Development",
-        shortName: "WEB DEV",
-        duration: "4–6 Months",
-        description:
-            "Develop modern websites and learn the fundamentals of frontend development and web technologies.",
-        features: [
-            "HTML & CSS",
-            "JavaScript fundamentals",
-            "Responsive web design",
-        ],
-    },
 ];
 
 export default function PopularCourses() {
